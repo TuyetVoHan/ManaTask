@@ -1,0 +1,9 @@
+# Bỏ qua file .env trong thư mục backend
+backend/.env
+
+# Bỏ qua node_modules trong thư mục frontend
+manatask-frontend/node_modules/
+
+# Các file rác hệ thống khác (nên có)
+.DS_Store
+*.log
