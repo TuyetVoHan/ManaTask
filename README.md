@@ -2,7 +2,7 @@
 
 ManaTask gồm 2 phần:
 - Backend: FastAPI (thư mục backend)
-- Frontend: React + Vite (thư mục manatask-frontend)
+- Frontend: React + Vite (thư mục frontend)
 
 Mặc định khi chạy local:
 - Backend: http://localhost:8000
@@ -66,14 +66,14 @@ Kiểm tra backend đã lên:
 ## 6) Cài thư viện frontend
 
 ```powershell
-cd manatask-frontend
+cd frontend
 npm install
 ```
 
 ## 7) Chạy frontend
 
 ```powershell
-cd manatask-frontend
+cd frontend
 npm run dev
 ```
 
@@ -93,7 +93,7 @@ python -m uvicorn app.main:app --reload
 Terminal 2 (frontend):
 
 ```powershell
-cd manatask-frontend
+cd frontend
 npm run dev
 ```
 
@@ -114,7 +114,7 @@ npm run dev
 - Xóa node_modules và cài lại:
 
 ```powershell
-cd manatask-frontend
+cd frontend
 Remove-Item -Recurse -Force node_modules
 npm install
 npm run dev
@@ -125,7 +125,7 @@ npm run dev
 ```text
 ManaTask/
 	backend/
-	manatask-frontend/
+	frontend/
 ```
 
 Chỉ cần nhớ 2 lệnh quan trọng nhất:
