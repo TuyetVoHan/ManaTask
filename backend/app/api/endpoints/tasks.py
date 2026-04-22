@@ -19,11 +19,17 @@ def get_my_tasks(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """API dùng cho trang Calendar: Lấy tất cả Task được giao cho User hiện tại"""
-    tasks = db.query(Task).filter(
+    """API dùng cho trang Calendar: Lấy tất cả Task được giao cho User hiện tại (Trừ các task đã Done)"""
+    from app.models.task import Task, Status # Import trực tiếp để tránh lỗi
+    
+    # Kết hợp (Join) bảng Task và bảng Status để lọc
+    tasks = db.query(Task).join(Status, Task.statusId == Status.statusId).filter(
         Task.assigneeId == current_user["user_id"], 
-        Task.IsDeleted == False
+        Task.IsDeleted == False,
+        ~Status.statusName.ilike('%done%'),        # Bỏ qua các task nằm ở cột có chữ Done
+        ~Status.statusName.ilike('%hoàn thành%')   # Bỏ qua các task nằm ở cột Hoàn thành
     ).all()
+    
     return tasks
 
 @router.get("/project/{project_id}", response_model=List[TaskResponse])

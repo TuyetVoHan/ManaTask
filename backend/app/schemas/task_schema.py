@@ -7,14 +7,16 @@ class TaskBase(BaseModel):
     taskTitle: str
     description: Optional[str] = None
     deadline: Optional[date] = None
-    # storyPoint tối đa là 5 theo như URD bạn thiết kế
-    storyPoint: Optional[int] = Field(default=0, le=5, description="Tối đa 5 point 1 tuần")
+    # XÓA GIỚI HẠN Ở ĐÂY: Để API trả về không bị sập nếu trong DB lỡ có task điểm cao
+    storyPoint: Optional[int] = Field(default=0, description="Điểm đánh giá khối lượng công việc")
     statusId: int
     assigneeId: Optional[int] = None
 
 # Khi tạo Task, Frontend phải gửi kèm projectId để biết task này thuộc dự án nào
 class TaskCreate(TaskBase):
     projectId: int
+    # BẢO VỆ LÚC TẠO: Chỉ cho phép nhập từ 0 đến 100
+    storyPoint: Optional[int] = Field(default=0, ge=0, le=100, description="Story Point từ 0 đến 100")
 
 # Khi kéo thả Task trên bảng Kanban, thường chỉ gửi lên statusId mới
 class TaskUpdateStatus(BaseModel):
@@ -29,12 +31,11 @@ class TaskResponse(TaskBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-from typing import Optional
-from datetime import date
-
 class TaskUpdateFull(BaseModel):
     taskTitle: Optional[str] = None
     description: Optional[str] = None
     deadline: Optional[date] = None
-    storyPoint: Optional[int] = None
+    # BẢO VỆ LÚC SỬA: Chỉ cho phép sửa điểm từ 0 đến 100
+    storyPoint: Optional[int] = Field(None, ge=0, le=100, description="Story Point từ 0 đến 100")
     assigneeId: Optional[int] = None # Cho phép Giao việc cho người khác
+    statusId: Optional[int] = None

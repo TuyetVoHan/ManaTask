@@ -114,7 +114,19 @@ export function TaskViewDialog({ task, isOpen, onClose, projectId, onSuccess }: 
                 </div>
                 <div className="space-y-2">
                   <Label>Story Point</Label>
-                  <Input type="number" min="0" value={formData.storyPoint} onChange={e => setFormData({...formData, storyPoint: Number(e.target.value)})} />
+                  <Input 
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    value={formData.storyPoint} 
+                    onChange={e => {
+                      let val = Number(e.target.value);
+                      if (val < 0) val = 0;
+                      if (val > 100) val = 100; // Khóa cứng ở 100
+                      setFormData({...formData, storyPoint: val});
+                    }} 
+                  />
+                  <p className="text-[11px] text-gray-500">Tối đa: 100 SP</p>
                 </div>
               </div>
               <div className="space-y-2">

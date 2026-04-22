@@ -147,30 +147,40 @@ def add_member_to_project(db: Session, project_id: int, email: str, role: str, c
 from app.models.task import Task, Status
 
 def get_project_statistics(db: Session, project_id: int):
-    """Tính toán tiến độ, đóng góp thành viên và phân bổ công việc (Bản Fix Lỗi Hiển Thị)"""
+    """Tính toán tiến độ, đóng góp thành viên và phân bổ (Fix lỗi sập trắng trang)"""
+    from app.models.task import Task, Status
+    from app.models.participant import Participant
+    from sqlalchemy import or_, and_
     
-    # 1. Lấy danh sách cột trạng thái
-    statuses = db.query(Status).filter(
-        Status.projectId == project_id, 
-        Status.IsDeleted == False
-    ).order_by(Status.orderIndex.asc()).all()
-    
-    if not statuses: # Fallback dự án cũ
-        statuses = db.query(Status).filter(
-            Status.projectId == None, 
-            Status.IsDeleted == False
-        ).order_by(Status.orderIndex.asc()).all()
-
-    done_status_ids = [s.statusId for s in statuses if 'done' in s.statusName.lower() or 'hoàn thành' in s.statusName.lower()]
-
-    # 2. Lấy toàn bộ Task
+    # 1. Lấy toàn bộ Task của dự án
     tasks = db.query(Task).filter(Task.projectId == project_id, Task.IsDeleted == False).all()
+    task_status_ids = [t.statusId for t in tasks]
     
+    # 2. Lấy Cột trạng thái (ĐÃ FIX LỖI SẬP TRANG TẠI ĐÂY)
+    # Tự động linh hoạt dựa trên việc dự án có task hay không
+    conditions = [and_(Status.projectId == project_id, Status.IsDeleted == False)]
+    if task_status_ids:
+        conditions.append(Status.statusId.in_(task_status_ids))
+        
+    statuses = db.query(Status).filter(or_(*conditions)).order_by(Status.orderIndex.asc()).all()
+
+    # 3. Lọc tên cột DUY NHẤT để biểu đồ Bar Chart không bị lặp đúp
+    unique_status_names = []
+    for s in statuses:
+        if s.statusName not in unique_status_names:
+            unique_status_names.append(s.statusName)
+
+    # 4. Tìm ID của các cột mang ý nghĩa "Hoàn thành" / "Done"
+    done_status_ids = [
+        s.statusId for s in statuses 
+        if 'done' in s.statusName.lower() or 'hoàn thành' in s.statusName.lower()
+    ]
+
     total_sp = sum((t.storyPoint or 0) for t in tasks)
     completed_sp = sum((t.storyPoint or 0) for t in tasks if t.statusId in done_status_ids)
     progress = (completed_sp / total_sp * 100) if total_sp > 0 else 0
 
-    # 3. Tính điểm đóng góp (Chỉ xét Task đã Done, Có người làm, và SP > 0)
+    # 5. TÍNH ĐÓNG GÓP: Chỉ tính Task Đã Done, Có người làm, và STORY POINT > 0
     completed_tasks = [t for t in tasks if t.statusId in done_status_ids and t.assigneeId is not None]
     member_sp = {}
     
@@ -181,36 +191,36 @@ def get_project_statistics(db: Session, project_id: int):
     
     contributions = []
     for a_id, sp in member_sp.items():
-        if sp > 0: # <--- ĐIỂM MẤU CHỐT LÀ ĐÂY
+        if sp > 0:
             user = db.query(Participant).filter(Participant.participantId == a_id).first()
             contributions.append({
                 "fullName": user.fullName if user else "Ẩn danh",
                 "completedSP": sp
             })
 
-    # 4. FIX BAR CHART: Gom nhóm cột trùng tên & Xử lý Task mồ côi
-    status_dict = {}
-    known_status_ids = []
-    
-    for s in statuses:
-        known_status_ids.append(s.statusId)
-        # Gộp các cột trùng tên lại với nhau để Recharts không bị lỗi
-        if s.statusName not in status_dict:
-            status_dict[s.statusName] = 0
-            
-        count = sum(1 for t in tasks if t.statusId == s.statusId)
-        status_dict[s.statusName] += count
+    # 6. Gom số lượng Task theo TÊN CỘT
+    tasks_by_status = []
+    for name in unique_status_names:
+        matching_ids = [s.statusId for s in statuses if s.statusName == name]
+        count = sum(1 for t in tasks if t.statusId in matching_ids)
         
-    tasks_by_status = [{"statusName": name, "taskCount": count} for name, count in status_dict.items()]
+        # Chỉ hiển thị cột nếu nó đang Active HOẶC nếu nó có chứa Task
+        is_active_column = any((s.statusName == name and not s.IsDeleted and s.projectId == project_id) for s in statuses)
+        if is_active_column or count > 0:
+            tasks_by_status.append({
+                "statusName": name,
+                "taskCount": count
+            })
 
-    # NẾU có Task nào đang mang ID lạ (bị kẹt), vớt nó vào một cột "Khác" để báo cáo không bị hụt số liệu
-    orphaned_tasks = sum(1 for t in tasks if t.statusId not in known_status_ids)
-    if orphaned_tasks > 0:
+    # 7. Gom các task bị mồ côi
+    known_ids = [s.statusId for s in statuses]
+    orphaned_count = sum(1 for t in tasks if t.statusId not in known_ids)
+    if orphaned_count > 0:
         tasks_by_status.append({
-            "statusName": "Cột cũ / Lỗi kẹt",
-            "taskCount": orphaned_tasks
+            "statusName": "Lỗi/Chưa phân loại",
+            "taskCount": orphaned_count
         })
-            
+        
     return {
         "totalTasks": len(tasks),
         "totalSP": total_sp,

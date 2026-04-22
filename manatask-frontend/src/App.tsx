@@ -56,14 +56,7 @@ export default function App() {
         />
 
         {/* Trang Báo cáo Thống kê của dự án */}
-        <Route 
-          path="/project/:projectId/report" 
-          element={
-            <PrivateRoute>
-              <Reports {...({} as any)} />
-            </PrivateRoute>
-          } 
-        />
+       <Route path="/project/:projectId/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
 
         {/* Trang Hồ sơ cá nhân (Figma đặt tên là Settings) */}
         <Route 
