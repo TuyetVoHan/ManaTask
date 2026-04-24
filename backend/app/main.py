@@ -18,6 +18,7 @@ app = FastAPI(
 # Chúng ta cấp phép cho Localhost để test và Vercel để chạy thực tế
 origins = [
     "http://localhost:5173",
+    "http://localhost:3000",
     "http://127.0.0.1:5173",
     "https://mana-task.vercel.app", # Link Frontend đã deploy của bạn
 ]

@@ -241,12 +241,12 @@ export default function ProjectDetail() {
         onSuccess={fetchData} 
       />
       <TaskViewDialog 
-        isOpen={isViewOpen} 
-        onClose={() => setIsViewOpen(false)} 
-        task={selectedTask} 
-        projectId={Number(projectId)} 
-        onSuccess={fetchData} 
-      />
+            isOpen={isViewOpen} 
+            onClose={() => setIsViewOpen(false)} 
+            task={selectedTask} 
+            onUpdate={fetchData} 
+            members={members}
+          />
     </div>
   );
 }

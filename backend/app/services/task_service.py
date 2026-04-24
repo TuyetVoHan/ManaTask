@@ -65,12 +65,12 @@ def update_task_details(db: Session, task_id: int, task_in: TaskUpdateFull):
     if not task:
         raise HTTPException(status_code=404, detail="Không tìm thấy Task.")
     
-    # Cập nhật các trường nếu có gửi data lên
-    if task_in.taskTitle is not None: task.taskTitle = task_in.taskTitle
-    if task_in.description is not None: task.description = task_in.description
-    if task_in.deadline is not None: task.deadline = task_in.deadline
-    if task_in.storyPoint is not None: task.storyPoint = task_in.storyPoint
-    if task_in.assigneeId is not None: task.assigneeId = task_in.assigneeId
+    # Tuyệt chiêu của FastAPI: Chỉ lấy những trường thực sự được Frontend gửi lên
+    # Kể cả Frontend cố tình gửi giá trị null, nó cũng sẽ bắt được để cập nhật
+    update_data = task_in.model_dump(exclude_unset=True)
+    
+    for key, value in update_data.items():
+        setattr(task, key, value)
 
     db.commit()
     db.refresh(task)
