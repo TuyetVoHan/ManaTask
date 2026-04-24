@@ -1,25 +1,16 @@
-# app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Import các cấu hình và Router đã viết
-from app.core.config import settings
 from app.api.api_router import api_router
-from app.db.database import engine
-from app.db.base_class import Base
+from app.db.database import engine, Base
 
-# (Tùy chọn) Lệnh này giúp SQLAlchemy tự động quét các file models 
-# và tạo bảng trong Supabase nếu nó chưa tồn tại. 
-# Vì bạn đã chạy file SQL bằng tay trên Supabase rồi, lệnh này sẽ an toàn bỏ qua các bảng đã có.
+# Tự động tạo các bảng trong database (nếu chưa tồn tại)
+# Lưu ý: Khi deploy, lệnh này giúp đảm bảo DB trên Supabase luôn đồng bộ
 Base.metadata.create_all(bind=engine)
 
-# Khởi tạo ứng dụng FastAPI
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description="API Backend cho hệ thống ManaTask - Quản lý dự án sinh viên",
-    version="1.0.0",
-    docs_url="/docs", # Đường dẫn mặc định để xem tài liệu Swagger UI
-    redoc_url="/redoc"
+    title="ManaTask API",
+    description="Hệ thống API backend cho ứng dụng quản lý công việc ManaTask",
+    version="1.1.0"
 )
 
 # CẤU HÌNH CORS (Bảo mật đường truyền)
@@ -29,25 +20,25 @@ origins = [
     "http://127.0.0.1:5173",
     "https://mana-task.vercel.app/", # Link Frontend đã deploy của bạn
 ]
-# Cấu hình CORS (Cross-Origin Resource Sharing)
-# Rất quan trọng: Giúp Frontend (ví dụ chạy ở localhost:3000) 
-# có quyền gọi API xuống Backend (chạy ở localhost:8000) mà không bị trình duyệt chặn.
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # Trong thực tế khi deploy, nên thay "*" bằng URL của Frontend
+    allow_origins=origins, # Chỉ cho phép các domain trong danh sách trên
     allow_credentials=True,
-    allow_methods=["*"], # Cho phép tất cả các method (GET, POST, PUT, DELETE...)
-    allow_headers=["*"],
+    allow_methods=["*"],    # Cho phép tất cả các phương thức (GET, POST, PUT, DELETE)
+    allow_headers=["*"],    # Cho phép tất cả các loại Header (Authorization, Content-Type...)
 )
 
-# Gắn toàn bộ các API con (auth, projects, tasks, users) vào app chính
+# Kết nối các đầu API (Routes)
+# Tất cả các API sẽ bắt đầu bằng tiền tố /api (Ví dụ: /api/tasks, /api/projects)
 app.include_router(api_router, prefix="/api")
 
-# Tạo một API gốc (Health Check) để kiểm tra server có đang sống không
 @app.get("/")
-def root():
+def read_root():
+    """Trang chào mừng API (Dùng để kiểm tra nhanh xem Backend có đang chạy không)"""
     return {
-        "status": "success",
-        "message": "Chào mừng đến với API của ManaTask!",
-        "version": "1.0.0"
+        "status": "Online",
+        "message": "Chào mừng đến với ManaTask API!",
+        "version": "1.1.0",
+        "docs": "/docs" # Đường dẫn đến tài liệu Swagger UI
     }
