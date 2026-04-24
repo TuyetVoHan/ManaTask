@@ -5,6 +5,20 @@ from app.models.project import Project, ProjectMember
 from app.schemas.project_schema import ProjectCreate, ProjectUpdate
 from app.services.notification_service import send_notification
 from sqlalchemy import or_
+# THÊM VÀO ĐẦU FILE app/services/project_service.py
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from app.models.project import Project
+from app.models.participant import Participant
+
+def _is_leader(db: Session, project_id: int, user_id: int) -> bool:
+    """Kiểm tra xem User có phải là Leader của Project không"""
+    participant = db.query(Participant).filter(
+        Participant.projectId == project_id,
+        Participant.userId == user_id,
+        Participant.IsDeleted == False
+    ).first()
+    return participant is not None and participant.role == 'Leader'
 
 def get_projects_by_user(db: Session, user_id: int):
     """Lấy danh sách các dự án mà user đang tham gia."""
@@ -66,13 +80,19 @@ def update_project(db: Session, project_id: int, project_in: ProjectUpdate, user
     return project
 
 def delete_project(db: Session, project_id: int, user_id: int):
-    """Xóa mềm dự án (Chuyển IsDeleted = True)."""
-    # Tương tự như update, kiểm tra quyền Leader ở đây...
-    project = db.query(Project).filter(Project.projectId == project_id, Project.IsDeleted == False).first()
-    if project:
-        project.IsDeleted = True
-        db.commit()
+    """Xóa mềm dự án (Chỉ Leader mới được xóa)."""
+    # 1. KIỂM TRA QUYỀN LEADER
+    if not _is_leader(db, project_id, user_id):
+        raise HTTPException(status_code=403, detail="Chỉ Leader mới có quyền xóa dự án này.")
 
+    # 2. TIẾN HÀNH XÓA
+    project = db.query(Project).filter(Project.projectId == project_id, Project.IsDeleted == False).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Không tìm thấy dự án.")
+        
+    project.IsDeleted = True
+    db.commit()
+    return {"message": "Đã xóa dự án thành công."}
 from app.models.participant import Participant
 
 def get_project_members(db: Session, project_id: int):
@@ -256,3 +276,21 @@ def remove_member_from_project(db: Session, project_id: int, participant_id: int
         member.IsDeleted = True
         db.commit()
     return {"message": "Đã xóa thành viên khỏi dự án."}
+
+def toggle_project_completion(db: Session, project_id: int, user_id: int):
+    """Thay đổi trạng thái hoàn thành dự án (Chỉ Leader mới được đổi)"""
+    # 1. KIỂM TRA QUYỀN LEADER
+    if not _is_leader(db, project_id, user_id):
+        raise HTTPException(status_code=403, detail="Chỉ Leader mới có quyền thay đổi trạng thái hoàn thành dự án.")
+
+    # 2. TIẾN HÀNH ĐỔI TRẠNG THÁI
+    project = db.query(Project).filter(Project.projectId == project_id, Project.IsDeleted == False).first()
+    if not project:
+         raise HTTPException(status_code=404, detail="Không tìm thấy dự án.")
+
+    # Đảo ngược trạng thái hiện tại (True thành False, False thành True)
+    # Nếu đang null thì mặc định chuyển thành True
+    project.isCompleted = not bool(project.isCompleted) 
+    db.commit()
+    db.refresh(project)
+    return project

@@ -119,3 +119,16 @@ def toggle_project_complete(
     db.commit()
     
     return {"message": "Đã cập nhật trạng thái dự án", "isCompleted": project.isCompleted}
+
+# Mở cổng API cho nút Đánh dấu hoàn thành
+@router.put("/{project_id}/toggle-complete")
+def toggle_project_completion_endpoint(
+    project_id: int, 
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    return project_service.toggle_project_completion(
+        db=db, 
+        project_id=project_id, 
+        user_id=current_user.userId
+    )

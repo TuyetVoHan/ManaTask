@@ -4,7 +4,8 @@ import api from "../services/api";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { ChevronLeft, Trash2, Users, Save } from "lucide-react";
+import { ChevronLeft, Trash2, Users, Save, AlertTriangle } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 
 export default function ProjectSettings() {
   const { projectId } = useParams();
@@ -14,6 +15,24 @@ export default function ProjectSettings() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("Member");
+
+  // Lấy ID người dùng hiện tại từ Token
+  const token = localStorage.getItem('token');
+  let currentUserId: number | null = null;
+  if (token) {
+    try {
+      const decoded: any = jwtDecode(token);
+      // Backend thường lưu userId ở trường 'sub' hoặc 'id' trong JWT
+      currentUserId = parseInt(decoded.sub || decoded.id); 
+    } catch (e) {
+      console.error("Lỗi giải mã token", e);
+    }
+  }
+
+  // Kiểm tra xem người dùng hiện tại có phải Leader không
+  const isLeader = members.some(
+    (m: any) => m.participantId === currentUserId && m.role === 'Leader'
+  );
 
   const fetchProjectData = async () => {
     try {
@@ -132,23 +151,26 @@ export default function ProjectSettings() {
           <div>
             <h3 className="text-lg font-bold mb-4 flex items-center"><Users className="h-5 w-5 mr-2" /> Quản lý thành viên</h3>
             
-            <div className="flex gap-4 mb-6">
-              <Input 
-                placeholder="Nhập email thành viên cần mời..." 
-                value={newMemberEmail} 
-                onChange={e => setNewMemberEmail(e.target.value)} 
-                className="max-w-xs"
-              />
-              <select 
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={newMemberRole}
-                onChange={e => setNewMemberRole(e.target.value)}
-              >
-                <option value="Member">Thành viên (Member)</option>
-                <option value="Leader">Quản lý (Leader)</option>
-              </select>
-              <Button onClick={handleAddMember} variant="outline">Mời vào dự án</Button>
-            </div>
+            {/* Chỉ Leader mới thấy form thêm thành viên (Tùy chọn) */}
+            {isLeader && (
+              <div className="flex gap-4 mb-6">
+                <Input 
+                  placeholder="Nhập email thành viên cần mời..." 
+                  value={newMemberEmail} 
+                  onChange={e => setNewMemberEmail(e.target.value)} 
+                  className="max-w-xs"
+                />
+                <select 
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={newMemberRole}
+                  onChange={e => setNewMemberRole(e.target.value)}
+                >
+                  <option value="Member">Thành viên (Member)</option>
+                  <option value="Leader">Quản lý (Leader)</option>
+                </select>
+                <Button onClick={handleAddMember} variant="outline">Mời vào dự án</Button>
+              </div>
+            )}
 
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
               {members.map(member => (
@@ -159,57 +181,64 @@ export default function ProjectSettings() {
                       Vai trò: {member.role}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => handleRemoveMember(member.participantId)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {/* Ẩn nút xóa thành viên nếu không phải leader (hoặc không cho tự xóa chính mình) */}
+                  {isLeader && member.participantId !== currentUserId && (
+                    <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => handleRemoveMember(member.participantId)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* KHU VỰC NGUY HIỂM (DANGER ZONE) */}
-        <div className="mt-12 border-t border-gray-200 pt-8 max-w-4xl">
-          <h3 className="text-xl font-bold text-red-600 mb-6">Khu vực quản trị (Danger Zone)</h3>
-          
-          <div className="space-y-4">
-            {/* Nút Hoàn thành dự án */}
-            <div className="flex items-center justify-between bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-              <div>
-                <h4 className="font-bold text-gray-900 text-base mb-1">Trạng thái dự án</h4>
-                <p className="text-sm text-gray-600">
-                  {isCompleted 
-                    ? "Dự án đang bị đóng. Việc này làm mờ dự án ở trang chủ." 
-                    : "Đánh dấu hoàn thành sẽ đóng băng dự án và làm mờ nó ngoài Dashboard."}
-                </p>
+        {/* KHU VỰC NGUY HIỂM (Chỉ hiện khi là Leader) */}
+        {isLeader && (
+          <div className="mt-12 border-t border-gray-200 pt-8 max-w-4xl">
+            <h3 className="text-xl font-bold text-red-600 mb-6 flex items-center">
+               <AlertTriangle className="w-6 h-6 mr-2" /> Khu vực quản trị (Danger Zone)
+            </h3>
+            
+            <div className="space-y-4">
+              {/* Nút Hoàn thành dự án */}
+              <div className="flex items-center justify-between bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                <div>
+                  <h4 className="font-bold text-gray-900 text-base mb-1">Trạng thái dự án</h4>
+                  <p className="text-sm text-gray-600">
+                    {isCompleted 
+                      ? "Dự án đang bị đóng. Việc này làm mờ dự án ở trang chủ." 
+                      : "Đánh dấu hoàn thành sẽ đóng băng dự án và làm mờ nó ngoài Dashboard."}
+                  </p>
+                </div>
+                <Button 
+                  variant={isCompleted ? "outline" : "default"} 
+                  onClick={handleToggleComplete}
+                  className={!isCompleted ? "bg-green-600 hover:bg-green-700 font-bold" : "font-bold"}
+                >
+                  {isCompleted ? "Mở lại dự án" : "Hoàn thành dự án"}
+                </Button>
               </div>
-              <Button 
-                variant={isCompleted ? "outline" : "default"} 
-                onClick={handleToggleComplete}
-                className={!isCompleted ? "bg-green-600 hover:bg-green-700 font-bold" : "font-bold"}
-              >
-                {isCompleted ? "Mở lại dự án" : "Hoàn thành dự án"}
-              </Button>
-            </div>
 
-            {/* Nút Xóa vĩnh viễn dự án */}
-            <div className="flex items-center justify-between bg-red-50/50 p-5 rounded-xl border border-red-100">
-              <div>
-                <h4 className="font-bold text-red-900 text-base mb-1">Xóa dự án</h4>
-                <p className="text-sm text-red-600/80">
-                  Xóa toàn bộ công việc, tài liệu và cài đặt của dự án này. Hành động này không thể hoàn tác.
-                </p>
+              {/* Nút Xóa vĩnh viễn dự án */}
+              <div className="flex items-center justify-between bg-red-50/50 p-5 rounded-xl border border-red-100">
+                <div>
+                  <h4 className="font-bold text-red-900 text-base mb-1">Xóa dự án</h4>
+                  <p className="text-sm text-red-600/80">
+                    Xóa toàn bộ công việc, tài liệu và cài đặt của dự án này. Hành động này không thể hoàn tác.
+                  </p>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteProject}
+                  className="font-bold whitespace-nowrap"
+                >
+                  Xóa vĩnh viễn dự án
+                </Button>
               </div>
-              <Button 
-                variant="destructive" 
-                onClick={handleDeleteProject}
-                className="font-bold whitespace-nowrap"
-              >
-                Xóa vĩnh viễn dự án
-              </Button>
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
