@@ -22,12 +22,19 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# CẤU HÌNH CORS (Bảo mật đường truyền)
+# Chúng ta cấp phép cho Localhost để test và Vercel để chạy thực tế
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://mana-task.vercel.app/", # Link Frontend đã deploy của bạn
+]
 # Cấu hình CORS (Cross-Origin Resource Sharing)
 # Rất quan trọng: Giúp Frontend (ví dụ chạy ở localhost:3000) 
 # có quyền gọi API xuống Backend (chạy ở localhost:8000) mà không bị trình duyệt chặn.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Trong thực tế khi deploy, nên thay "*" bằng URL của Frontend
+    allow_origins=origins, # Trong thực tế khi deploy, nên thay "*" bằng URL của Frontend
     allow_credentials=True,
     allow_methods=["*"], # Cho phép tất cả các method (GET, POST, PUT, DELETE...)
     allow_headers=["*"],
