@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.api_router import api_router
-from app.db.database import engine, Base
+from app.db.database import engine
+from app.db.base_class import Base
 
 # Tự động tạo các bảng trong database (nếu chưa tồn tại)
 # Lưu ý: Khi deploy, lệnh này giúp đảm bảo DB trên Supabase luôn đồng bộ
