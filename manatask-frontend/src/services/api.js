@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Khởi tạo một instance của axios
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api', // Đường dẫn tới Backend FastAPI
+  baseURL: 'https://manatask-api.onrender.com/api', // Đường dẫn tới Backend FastAPI
 });
 
 // Interceptor: Tự động gắn Token vào mọi Request gửi đi (nếu đã đăng nhập)
