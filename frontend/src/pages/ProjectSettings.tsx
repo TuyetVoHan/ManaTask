@@ -17,13 +17,13 @@ export default function ProjectSettings() {
   const [newMemberRole, setNewMemberRole] = useState("Member");
 
   // Lấy ID người dùng hiện tại từ Token
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
   let currentUserId: number | null = null;
-  if (token) {
+if (token) {
     try {
       const decoded: any = jwtDecode(token);
-      // Backend thường lưu userId ở trường 'sub' hoặc 'id' trong JWT
-      currentUserId = parseInt(decoded.sub || decoded.id); 
+      //console.log("Dữ liệu từ Token của bạn:", decoded);
+      currentUserId = parseInt(decoded.user_id);
     } catch (e) {
       console.error("Lỗi giải mã token", e);
     }
