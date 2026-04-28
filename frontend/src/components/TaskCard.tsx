@@ -1,14 +1,19 @@
 import { Draggable } from "@hello-pangea/dnd";
 import { Card, CardContent } from "./ui/card";
 import { Clock } from "lucide-react";
+import { Avatar } from "./ui/avatar"; // Thêm import Avatar
 
 interface TaskCardProps {
   task: any;
   index: number;
   onClick: (task: any) => void;
+  members?: any[]; // <--- Bổ sung thêm dòng nhận danh sách members
 }
 
-export function TaskCard({ task, index, onClick }: TaskCardProps) {
+export function TaskCard({ task, index, onClick, members = [] }: TaskCardProps) {
+  // Dò tìm thông tin người đang được giao việc
+  const assignee = members.find(m => m.participantId === task.assigneeId);
+
   return (
     <Draggable draggableId={task.taskId.toString()} index={index}>
       {(provided, snapshot) => (
@@ -39,11 +44,23 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
                   )}
                 </div>
                 
-                {task.storyPoint > 0 && (
-                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold shadow-sm">
-                    {task.storyPoint}
-                  </span>
-                )}
+                {/* Khu vực hiển thị Avatar và Story Point */}
+                <div className="flex items-center gap-1.5">
+                  {assignee && (
+                    <div title={`Người thực hiện: ${assignee.fullName}`}>
+                      <Avatar 
+                        name={assignee.fullName} 
+                        className="h-6 w-6 text-[9px] font-bold bg-indigo-100 text-indigo-700 flex items-center justify-center shadow-sm" 
+                      />
+                    </div>
+                  )}
+                  
+                  {task.storyPoint > 0 && (
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                      {task.storyPoint}
+                    </span>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

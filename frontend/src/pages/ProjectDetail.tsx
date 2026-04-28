@@ -211,6 +211,7 @@ export default function ProjectDetail() {
                         title={col.statusName}
                         // Đẩy Task ĐÃ LỌC vào Cột
                         tasks={filteredTasks.filter((t: any) => t.statusId === col.statusId)}
+                        members={members}
                         onTaskClick={(t) => { setSelectedTask(t); setIsViewOpen(true); }}
                         onEditColumn={handleEditColumn}
                         onDeleteColumn={handleDeleteColumn}

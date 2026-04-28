@@ -7,13 +7,14 @@ interface TaskColumnProps {
   statusId: number;
   title: string;
   tasks: any[];
-  index: number; // Thêm index để xác định vị trí cột
+  index: number;
+  members: any[]; // <--- THÊM DÒNG NÀY
   onTaskClick: (task: any) => void;
   onEditColumn: (id: number, currentTitle: string) => void;
   onDeleteColumn: (id: number) => void;
 }
 
-export function TaskColumn({ statusId, title, tasks, index, onTaskClick, onEditColumn, onDeleteColumn }: TaskColumnProps) {
+export function TaskColumn({ statusId, title, tasks, index, members, onTaskClick, onEditColumn, onDeleteColumn }: TaskColumnProps) {
   return (
     <Draggable draggableId={`col-${statusId}`} index={index}>
       {(provided, snapshot) => (
@@ -58,7 +59,7 @@ export function TaskColumn({ statusId, title, tasks, index, onTaskClick, onEditC
                 }`}
               >
                 {tasks.map((task: any, index: number) => (
-                  <TaskCard key={task.taskId} task={task} index={index} onClick={onTaskClick} />
+                  <TaskCard key={task.taskId} task={task} index={index} onClick={onTaskClick} members={members} />
                 ))}
                 {provided.placeholder}
               </div>
